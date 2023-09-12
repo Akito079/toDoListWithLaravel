@@ -21,7 +21,7 @@
                         @endif
 
                     </div>
-                    <form action="{{ route('post#create') }}" method="POST">
+                    <form action="{{ route('post#create') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="text-group mb-3">
                             <label for="" id="">Post Title</label>
@@ -73,11 +73,12 @@
                             <label for="">Image</label>
                             <input type="file" class="form-control @error('postImage') is-invalid @enderror "
                                 name="postImage" id="">
-                                @error('postImage')
-                                <div class="invalid-feedback">
-                                    {{$message}}
-                                </div>
-                                @enderror
+                           @error('postImage')
+                           <div class="invalid-feedback">
+                            {{$message}}
+                           </div>
+                           @enderror
+
                         </div>
 
                         <div class="">

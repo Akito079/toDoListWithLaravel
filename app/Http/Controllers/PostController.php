@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Post;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class PostController extends Controller
@@ -59,15 +59,19 @@ class PostController extends Controller
             $key = request('searchKey');
             $query->orwhere('title','like','%'.$key.'%')->orwhere('description','like','%'.$key.'%');
         })->orderBy('created_at','desc')->paginate(3);
-        return view('create', compact('posts'));
+        return view('create',compact('posts'));
     }
 
     //post create
 
-    public function postCreate(Request $request)
-    {
+    public function postCreate(Request $request)    {
         $this->validationCheck($request);
         $data = $this->getPostData($request);
+        if($request->hasFile('postImage')){
+            $fileName = uniqid(). $request->file('postImage')->getClientOriginalName();
+            $request->file('postImage')->storeAs('public',$fileName);
+            $data['image']  = $fileName;
+        }
         Post::create($data);
         return redirect()->route('post#createPage')->with(['insertSuccess' => 'Postဖန်တီးမှုအောင်မြင်ပါသည်။']);
         //   return view('create');
@@ -83,7 +87,6 @@ class PostController extends Controller
         //first way
         // Post::where('id',$id)->delete();
         // return redirect()->route('post#createPage');
-
         //second way
         Post::find($id)->delete();
         return back();
@@ -105,24 +108,36 @@ class PostController extends Controller
     //update post
     public function update(Request $request)
     {
-
         $this->validationCheck($request);
         $id = $request->postId;
         $updateData = $this->getPostData($request); // array
+        if($request->hasFile('postImage')){
+            //delet old image
+            $oldImageName = Post::select('image')->where('id',$request->postId)->first();
+            $oldImageName = $oldImageName->image;
+            if($oldImageName != null){
+                Storage::delete('public/'.$oldImageName);
+            }
+
+            $fileName = uniqid(). $request->file('postImage')->getClientOriginalName();
+            $request->file('postImage')->storeAs('public',$fileName);
+            $updateData['image']  = $fileName;
+        }
         Post::where('id', $id)->update($updateData);
         return redirect()->route('post#createPage')->with(['updateSuccess' => 'Updateအောင်မြင်ပါပြီ။']);
     }
 
     private function getPostData($request)
     {
-        return [
+        $postData = [
             'title' => $request->postTitle,
             'description' => $request->postDescription,
-            'address' => $request->postAddress,
-            'price' => $request->postPrice,
-            'rating' => $request->postRating,
-
         ];
+        $postData['price'] = $request->postPrice == null? 2000 : $request->postPrice;
+        $postData['address'] = $request->postAddress == null? "Yangon" : $request->postAddress;
+        $postData['rating'] = $request->postRating == null? 3 : $request->postRating ;
+
+        return $postData;
     }
     private function validationCheck($request)
     {
@@ -130,24 +145,22 @@ class PostController extends Controller
         $validationRules = [
             'postTitle' => 'required|min:5|unique:posts,title,' . $request->postId,
             'postDescription' => 'required|min:5',
-            'postPrice' => 'required|integer|gte:2000|lte:50000',
-            'postAddress' => 'required',
-            'postRating'  => 'required',
-            'postImage' => 'required'
+            'postImage' =>  'mimes:jpg,jpeg,bmp,png|file'
         ];
 
 
         $validationMessage = [
             'postTitle.required' => 'Post Title ဖြည့်စွက်ရန်လိုအပ်ပါသည်။',
             'postTitle.min' => 'အနည်းဆုံးစာလုံး5လုံးလိုအပ်သည်။',
-            'postPrice.gte' => 'your price must be between 2000 and 50000',
-            'postPrice.lte' => 'your price must be between 2000 and 50000',
-            'postPrice.required' => 'you need to enter price',
-            'postAddress.required' => 'you need to add your location',
+            // 'postPrice.gte' => 'your price must be between 2000 and 50000',
+            // 'postPrice.lte' => 'your price must be between 2000 and 50000',
+            // 'postPrice.required' => 'you need to enter price',
+            // 'postAddress.required' => 'you need to add your location',
             'postTitle.unique' => 'Post Titleတူနေပါသည်ထပ်ရေးပါ။',
             'postDescription.required' => 'Post Description ဖြည့်စွက်ရန်လိုအပ်ပါသည်။',
-            'postRating.required' => 'You need to add rating',
-            'postImage.required' => 'You need to attach an image file'
+            // 'postRating.required' => 'You need to add rating',
+            'postImage.mimes' => 'Your image must be jpg,jpeg,png type',
+            'postImage.file' => 'Your image must be a file type'
         ];
         Validator::make($request->all(), $validationRules, $validationMessage)->validate();
     }

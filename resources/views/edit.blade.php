@@ -8,7 +8,7 @@
                     <a href="{{ route('post#update', $post['id']) }}" class="text-decoration-none text-black"><i
                             class="fa-solid fa-arrow-left-long mx-1"></i>back</a>
                 </div>
-                <form action="{{ route('post#update') }}" method="POST">
+                <form action="{{ route('post#update') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <label for="">Post Title</label>
                     <input type="hidden" name="postId" value="{{ $post['id'] }}">
@@ -18,6 +18,22 @@
                     @error('postTitle')
                         <div class="invalid-feedback mb-3">{{ $message }}</div>
                     @enderror
+
+                    <label for="">Image</label>
+                    <div class="">
+                        <img class="img-thumbnail d-block mx-auto shadow-sm my-4"
+                            src="@if ($post->image == null) {{ asset('storage/image-not-found-1-scaled-1150x647.png') }}
+                    @else
+                    {{ asset('storage/'.$post->image) }} @endif"
+                            alt="">
+                            <input type="file" name="postImage" id="" class="form-control my-4 @error('postImage') is-invalid @enderror">
+                            @error('postImage')
+                            <div class="invalid-feedback">
+                                {{$message}}
+                            </div>
+                            @enderror
+                    </div>
+
 
                     <label for="">Post Description</label>
                     <textarea name="postDescription" id="" cols="30" rows="10"
